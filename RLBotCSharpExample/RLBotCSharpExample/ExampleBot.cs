@@ -29,7 +29,7 @@ namespace RLBotCSharpExample
                 Vector3 carLocation = gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value;
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
-                // Calcluate the distance from the car to the ball
+                // Calculate the distance from the car to the ball
                 var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
 
                 // Calculate to get the angle from the front of the bot's car to the ball.
