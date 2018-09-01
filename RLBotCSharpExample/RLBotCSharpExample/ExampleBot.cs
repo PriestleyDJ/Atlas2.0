@@ -9,14 +9,7 @@ namespace RLBotCSharpExample
     class ExampleBot : Bot
     {
         // We want the constructor for ExampleBot to extend from Bot, but we don't want to add anything to it.
-        public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex) { }
-
-        /* private static double Stopwatch()
-         {
-             
-             var TimeElapsed = s.Elapsed.Milliseconds;
-             return TimeElapsed;
-         } */
+        public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex) {}
 
         private static Stopwatch s = new Stopwatch();
 
@@ -54,32 +47,27 @@ namespace RLBotCSharpExample
                     // Left Corner Spawn
                     if ((int)carLocation.X == 2043 && (int)carLocation.Y == -2555)
                     {
-                        // DistanceToBall = 3271 
-                        
+                        // DistanceToBall = 3271                         
                     }
                     // Right Corner Spawn 
                     else if ((int)carLocation.X == -2043 && (int)carLocation.Y == -2555)
                     {
                         // DistanceToBall = 3271
-
                     }
                     // Back Left Spawn
                     else if ((int)carLocation.X == 256 && (int)carLocation.Y == -3833)
                     {
-                        // DistanceToBall = 3842
-                        
+                        // DistanceToBall = 3842                        
                     }
                     // Back Right Spawn
                     else if ((int)Math.Round(carLocation.X) == -256 && (int)Math.Round(carLocation.Y) == -3833)
                     {
-                        // DistanceToBall = 3842
-                        
+                        // DistanceToBall = 3842                        
                     }
                     // Far Back Center Spawn
                     else if ((int)carLocation.X == 0 && (int)carLocation.Y == -4601)
                     {
                         // DistanceToBall = 4601
-
                     }
                 }
             }
@@ -93,6 +81,7 @@ namespace RLBotCSharpExample
             controller.Throttle = 1;
             return controller;
         }
+
         private static double CorrectAngle(double botFrontToTargetAngle)
         {
             // Correct the angle
@@ -102,6 +91,7 @@ namespace RLBotCSharpExample
                 botFrontToTargetAngle -= 2 * Math.PI;
             return botFrontToTargetAngle;
         }
+
         public double Get2DDistance(double x1, double x2, double y1, double y2)
         {
             return Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
