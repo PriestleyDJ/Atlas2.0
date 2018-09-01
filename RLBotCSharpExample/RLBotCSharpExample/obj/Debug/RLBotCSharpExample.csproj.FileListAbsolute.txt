@@ -1,0 +1,12 @@
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.csprojAssemblyReference.cache
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.csproj.CoreCompileInputs.cache
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\port.cfg
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotCSharpExample.exe.config
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotCSharpExample.exe
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotCSharpExample.pdb
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\FlatBuffers.dll
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotDotNet.dll
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotDotNet.pdb
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.csproj.CopyComplete
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.exe
+C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.pdb
