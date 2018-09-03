@@ -32,8 +32,6 @@ namespace RLBotCSharpExample
                 // Calculate the distance from the car to the ball
                 var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
 
-                
-
                 // Calculate to get the angle from the front of the bot's car to the ball.
                 double botToTargetAngle = Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X);
                 double botFrontToTargetAngle = botToTargetAngle - carRotation.Yaw;
@@ -42,11 +40,6 @@ namespace RLBotCSharpExample
                 float steer = (float)(botFrontToTargetAngle / Math.PI) * 3f;
                 controller.Steer = steer;
                 controller.Handbrake = (Math.Abs(steer) > 0.87);
-
-                controller.Boost = distanceToBall > 1500 || Math.Abs(steer) < 0.2;
-                
-                // Set the throttle to 1 so the bot can move.
-                controller.Throttle = 1;
 
                 // Kickoff
                 if (ballLocation.X == 0 && ballLocation.Y == 0)
@@ -83,6 +76,9 @@ namespace RLBotCSharpExample
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
             }
+
+            // Set the throttle to 1 so the bot can move.
+            controller.Throttle = 1;
             return controller;
         }
 

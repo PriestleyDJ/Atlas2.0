@@ -11,6 +11,7 @@ C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\
 C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.exe
 C:\Users\Owner\Desktop\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.pdb
 <<<<<<< HEAD
+<<<<<<< HEAD
 C:\Users\robbieh0102\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\port.cfg
 C:\Users\robbieh0102\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotCSharpExample.exe.config
 C:\Users\robbieh0102\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\bin\Debug\RLBotCSharpExample.exe
@@ -37,4 +38,6 @@ C:\Users\Owner\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\o
 C:\Users\Owner\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.exe
 C:\Users\Owner\Documents\GitHub\Atlas2.0\RLBotCSharpExample\RLBotCSharpExample\obj\Debug\RLBotCSharpExample.pdb
 >>>>>>> 3ddd67848e759723ce3a53314578024a4020e5d7
+>>>>>>> parent of 3ddd678... Boost
+=======
 >>>>>>> parent of 3ddd678... Boost
