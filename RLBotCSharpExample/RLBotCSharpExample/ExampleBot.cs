@@ -11,7 +11,7 @@ namespace RLBotCSharpExample
         // We want the constructor for ExampleBot to extend from Bot, but we don't want to add anything to it.
         public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex) {}
 
-        private static Stopwatch s = new Stopwatch();
+        private static Stopwatch dodgeWatch = new Stopwatch();
 
         public override Controller GetOutput(GameTickPacket gameTickPacket)
         {
@@ -39,7 +39,16 @@ namespace RLBotCSharpExample
                 // Decide which way to steer in order to get to the ball.
                 float steer = (float)(botFrontToTargetAngle / Math.PI) * 3f;
                 controller.Steer = steer;
-                controller.Handbrake = (Math.Abs(steer) > 0.87);
+                Console.WriteLine(steer);
+
+                // Change the throttle to so the bot can move.
+                controller.Throttle = (3 - Math.Abs(steer));
+
+                // Handle sliding
+                controller.Handbrake = (Math.Abs(steer) > 3);
+
+                // Handle boosting
+                controller.Boost = (Math.Abs(steer) < 0.15);
 
                 // Kickoff
                 if (ballLocation.X == 0 && ballLocation.Y == 0)
@@ -77,18 +86,14 @@ namespace RLBotCSharpExample
                 Console.WriteLine(e.StackTrace);
             }
 
-            // Set the throttle to 1 so the bot can move.
-            controller.Throttle = 1;
             return controller;
         }
 
         private static double CorrectAngle(double botFrontToTargetAngle)
         {
             // Correct the angle
-            if (botFrontToTargetAngle < -Math.PI)
-                botFrontToTargetAngle += 2 * Math.PI;
-            if (botFrontToTargetAngle > Math.PI)
-                botFrontToTargetAngle -= 2 * Math.PI;
+            if(botFrontToTargetAngle < -Math.PI) botFrontToTargetAngle += 2 * Math.PI;
+            if(botFrontToTargetAngle > Math.PI) botFrontToTargetAngle -= 2 * Math.PI;
             return botFrontToTargetAngle;
         }
 
@@ -96,5 +101,6 @@ namespace RLBotCSharpExample
         {
             return Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
         }
+
     }
 }
