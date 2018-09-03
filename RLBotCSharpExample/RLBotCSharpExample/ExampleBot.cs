@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace RLBotCSharpExample {
 
     // We want to our bot to derive from Bot, and then implement its abstract methods.
-    class ExampleBot : Bot {
+    class ExampleBot : Bot{
 
         // We want the constructor for ExampleBot to extend from Bot, but we don't want to add anything to it.
         public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex){}
@@ -28,18 +28,18 @@ namespace RLBotCSharpExample {
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
                 // Calculate the distance from the car to the ball
-                var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+                var ballDistance = distance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
 
                 // Calculate to get the angle from the front of the bot's car to the ball.
                 double botToTargetAngle = Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X);
                 double botFrontToTargetAngle = botToTargetAngle - carRotation.Yaw;
                 
                 // Decide which way to steer in order to get to the ball.
-                float steer = (float)(botFrontToTargetAngle / Math.PI) * 3f;
+                float steer = (float)(botFrontToTargetAngle / Math.PI) * 3F;
                 controller.Steer = steer;
 
                 controller.Handbrake = (Math.Abs(steer) > 0.87);
-                controller.Boost = distanceToBall > 1500 || Math.Abs(steer) < 0.2;
+                controller.Boost = (ballDistance > 1500 || Math.Abs(steer) < 0.2);
                 
                 // Set the throttle to 1 so the bot can move.
                 controller.Throttle = 1;
@@ -81,7 +81,7 @@ namespace RLBotCSharpExample {
             return botFrontToTargetAngle;
         }
 
-        public double Get2DDistance(double x1, double x2, double y1, double y2){
+        public double distance(double x1, double x2, double y1, double y2){
             return Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
         }
 
