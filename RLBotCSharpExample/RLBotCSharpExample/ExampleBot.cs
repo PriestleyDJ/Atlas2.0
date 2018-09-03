@@ -28,7 +28,11 @@ namespace RLBotCSharpExample {
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
                 // Calculate the distance from the car to the ball
+<<<<<<< HEAD
                 var ballDistance = dist(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+=======
+                var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+>>>>>>> parent of 3ddd678... Boost
 
                 // Calculate to get the angle from the front of the bot's car to the ball.
                 double botToTargetAngle = Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X);
@@ -38,12 +42,15 @@ namespace RLBotCSharpExample {
                 float steer = (float)(botFrontToTargetAngle / Math.PI) * 3F;
                 controller.Steer = steer;
 
+<<<<<<< HEAD
                 controller.Handbrake = (Math.Abs(steer) > 0.87);
                 controller.Boost = (ballDistance > 1500 || Math.Abs(steer) < 0.2);
                 
                 // Set the throttle to 1 so the bot can move.
                 controller.Throttle = 1;
 
+=======
+>>>>>>> parent of 3ddd678... Boost
                 // Kickoff
                 if(ballLocation.X == 0 && ballLocation.Y == 0){
                     // Left Corner Spawn
@@ -71,6 +78,9 @@ namespace RLBotCSharpExample {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
             }
+
+            // Set the throttle to 1 so the bot can move.
+            controller.Throttle = 1;
             return controller;
         }
 
