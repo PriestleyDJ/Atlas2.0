@@ -32,6 +32,9 @@ namespace RLBotCSharpExample {
                 var ballDistance = dist(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
 =======
                 var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+<<<<<<< HEAD
+>>>>>>> parent of 3ddd678... Boost
+=======
 >>>>>>> parent of 3ddd678... Boost
 
                 // Calculate to get the angle from the front of the bot's car to the ball.
@@ -43,12 +46,15 @@ namespace RLBotCSharpExample {
                 controller.Steer = steer;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 controller.Handbrake = (Math.Abs(steer) > 0.87);
                 controller.Boost = (ballDistance > 1500 || Math.Abs(steer) < 0.2);
                 
                 // Set the throttle to 1 so the bot can move.
                 controller.Throttle = 1;
 
+=======
+>>>>>>> parent of 3ddd678... Boost
 =======
 >>>>>>> parent of 3ddd678... Boost
                 // Kickoff
