@@ -28,7 +28,7 @@ namespace RLBotCSharpExample {
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
                 // Calculate the distance from the car to the ball
-                var ballDistance = distance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+                var ballDistance = dist(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
 
                 // Calculate to get the angle from the front of the bot's car to the ball.
                 double botToTargetAngle = Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X);
@@ -81,7 +81,7 @@ namespace RLBotCSharpExample {
             return botFrontToTargetAngle;
         }
 
-        public double distance(double x1, double x2, double y1, double y2){
+        public double dist(double x1, double x2, double y1, double y2){
             return Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
         }
 
