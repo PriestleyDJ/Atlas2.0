@@ -16,14 +16,10 @@ namespace RLBotCSharpExample
 
             dodgeWatch.Reset();
             dodgeWatch.Start();
-
-            dodgeTimerWatch.Reset();
-            dodgeTimerWatch.Start();
         }
 
         private static Stopwatch kickoffWatch = new Stopwatch();
         private static Stopwatch dodgeWatch = new Stopwatch();
-        private static Stopwatch dodgeTimerWatch = new Stopwatch();
         private static Boolean kickoff = false;
 
         public override Controller GetOutput(GameTickPacket gameTickPacket)
@@ -50,7 +46,7 @@ namespace RLBotCSharpExample
                 double botFrontToTargetAngle = botToTargetAngle - carRotation.Yaw;
                 
                 // Decide which way to steer in order to get to the ball
-                float steer = (float)(botFrontToTargetAngle / Math.PI) * 3F;
+                float steer = (float)(botFrontToTargetAngle / Math.PI) * 2.5F;
                 controller.Steer = steer;
                 Console.Write(steer);
 
@@ -58,13 +54,14 @@ namespace RLBotCSharpExample
                 controller.Throttle = (3F - Math.Abs(steer));
 
                 // Handle sliding
-                controller.Handbrake = (Math.Abs(steer) > 3);
+                controller.Handbrake = (Math.Abs(steer) > 2.75);
 
                 // Handle boosting
-                controller.Boost = (Math.Abs(steer) < 0.15F);
+                controller.Boost = (Math.Abs(steer) < 0.15F && carLocation.Z < 120);
 
                 // Kickoff
-                if (ballLocation.X == 0 && ballLocation.Y == 0)
+                Boolean kickoff = ballLocation.X == 0 && ballLocation.Y == 0;
+                if (kickoff)
                 {
                     // Left Corner Spawn
                     if ((int)carLocation.X == 2043 && (int)carLocation.Y == -2555)
@@ -103,7 +100,7 @@ namespace RLBotCSharpExample
                     {
                         controller.Boost = false;
                         controller.Throttle = 0;
-                        Console.WriteLine(", " + (kickoffWatch.ElapsedMilliseconds / 1000F) + "s kickoff");
+                        Console.Write(", " + (kickoffWatch.ElapsedMilliseconds / 1000F) + "s kickoff");
                     }
 
                     kickoff = true;
@@ -112,30 +109,35 @@ namespace RLBotCSharpExample
                 {
                     kickoff = false;
                     kickoffWatch.Stop();
+                }
 
-                    // Handle dodging
-                    Console.WriteLine(", " + (dodgeTimerWatch.ElapsedMilliseconds / 1000F) + "s dodge");
-                    if (Math.Abs(steer) < 0.2F && dodgeTimerWatch.ElapsedMilliseconds > 3000)
+                // Handle dodging
+                Console.WriteLine(", " + (dodgeWatch.ElapsedMilliseconds / 1000F) + "s dodge");
+                if (!kickoff || gameTickPacket.Players(this.index).Value.Boost == 0)
+                {
+                    if (dodgeWatch.ElapsedMilliseconds <= 1000)
                     {
-                        if (dodgeWatch.ElapsedMilliseconds >= 2200) dodgeWatch.Reset();
                         if (dodgeWatch.ElapsedMilliseconds <= 100)
                         {
                             controller.Jump = true;
                             controller.Pitch = -1;
-                        }else if (dodgeWatch.ElapsedMilliseconds >= 100 && dodgeWatch.ElapsedMilliseconds <= 150)
+                        }
+                        else if (dodgeWatch.ElapsedMilliseconds >= 100 && dodgeWatch.ElapsedMilliseconds <= 150)
                         {
                             controller.Jump = false;
                             controller.Pitch = -1;
                         }
-                        else if (dodgeWatch.ElapsedMilliseconds >= 150 && dodgeWatch.ElapsedMilliseconds < 1000)
+                        else if (dodgeWatch.ElapsedMilliseconds >= 150 && dodgeWatch.ElapsedMilliseconds <= 1000)
                         {
                             controller.Jump = true;
                             controller.Yaw = (float)Math.Sin(steer);
                             controller.Pitch = (float)-Math.Abs(Math.Cos(steer));
-                            dodgeTimerWatch.Reset();
                         }
                     }
-
+                    else if (Math.Abs(steer) < 0.2F && dodgeWatch.ElapsedMilliseconds >= 3000 && carLocation.Z < 120)
+                    {
+                        dodgeWatch.Restart();
+                    }
                 }
 
                 // End the line printed this frame
