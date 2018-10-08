@@ -5,10 +5,10 @@ using System.Diagnostics;
 
 namespace RLBotCSharpExample
 {
-    // We want to our bot to derive from Bot, and then implement its abstract methods
+    // We want to our bot to derive from Bot, and then implement its abstract methods.
     class ExampleBot : Bot
     {
-        // We want the constructor for ExampleBot to extend from Bot
+        // We want the constructor for ExampleBot to extend from Bot, but we don't want to add anything to it.
         public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex)
         {
             kickoffWatch.Reset();
@@ -24,39 +24,39 @@ namespace RLBotCSharpExample
 
         public override Controller GetOutput(GameTickPacket gameTickPacket)
         {
-            // This controller object will be returned at the end of the method
-            // This controller will contain all the inputs that we want the bot to perform
+            // This controller object will be returned at the end of the method.
+            // This controller will contain all the inputs that we want the bot to perform.
             Controller controller = new Controller();
 
-            // Wrap gameTickPacket retrieving in a try-catch so that the bot doesn't crash whenever a value isn't present
-            // A value may not be present if it was not sent
-            // These are nullables so trying to get them when they're null will cause errors, therefore we wrap in try-catch
+            // Wrap gameTickPacket retrieving in a try-catch so that the bot doesn't crash whenever a value isn't present.
+            // A value may not be present if it was not sent.
+            // These are nullables so trying to get them when they're null will cause errors, therefore we wrap in try-catch.
             try
             {
-                // Store the required data from the "gameTickPacket"
+                // Store the required data from the gameTickPacket.
                 Vector3 ballLocation = gameTickPacket.Ball.Value.Physics.Value.Location.Value;
                 Vector3 carLocation = gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value;
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
                 // Calculate the distance from the car to the ball
-                var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, carLocation.Y);
+                var distanceToBall = Get2DDistance(carLocation.X, ballLocation.X, carLocation.Y, ballLocation.Y);
 
-                // Calculate to get the angle from the front of the bot's car to the ball
+                // Calculate to get the angle from the front of the bot's car to the ball.
                 double botToTargetAngle = Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X);
                 double botFrontToTargetAngle = botToTargetAngle - carRotation.Yaw;
-                
-                // Decide which way to steer in order to get to the ball
+
+                // Decide which way to steer in order to get to the ball.
                 float steer = (float)(botFrontToTargetAngle / Math.PI) * 2.5F;
                 controller.Steer = steer;
                 Console.Write(steer);
 
-                // Change the throttle to so the bot can move
+                // Change the throttle so the bot can move
                 controller.Throttle = (3F - Math.Abs(steer));
 
-                // Handle sliding
+                // Handles sliding
                 controller.Handbrake = (Math.Abs(steer) > 2.75);
 
-                // Handle boosting
+                // Handles boosting
                 controller.Boost = (Math.Abs(steer) < 0.15F && carLocation.Z < 120);
 
                 // Kickoff
@@ -88,7 +88,7 @@ namespace RLBotCSharpExample
                     {
                         // DistanceToBall = 4601
                     }
-                    
+
                     if (!kickoff)
                     {
                         kickoffWatch.Reset();
@@ -111,7 +111,7 @@ namespace RLBotCSharpExample
                     kickoffWatch.Stop();
                 }
 
-                // Handle dodging
+                // Handles dodging
                 Console.WriteLine(", " + (dodgeWatch.ElapsedMilliseconds / 1000F) + "s dodge");
                 if (!kickoff || gameTickPacket.Players(this.index).Value.Boost == 0)
                 {
@@ -142,6 +142,7 @@ namespace RLBotCSharpExample
 
                 // End the line printed this frame
                 Console.WriteLine();
+
             }
             catch (Exception e)
             {
@@ -149,14 +150,17 @@ namespace RLBotCSharpExample
                 Console.WriteLine(e.StackTrace);
             }
 
+            // Set the throttle to 1 so the bot can move.
+            controller.Throttle = 1;
+
             return controller;
         }
 
         private static double CorrectAngle(double botFrontToTargetAngle)
         {
             // Correct the angle
-            if(botFrontToTargetAngle < -Math.PI) botFrontToTargetAngle += 2 * Math.PI;
-            if(botFrontToTargetAngle > Math.PI) botFrontToTargetAngle -= 2 * Math.PI;
+            if (botFrontToTargetAngle < -Math.PI) botFrontToTargetAngle += 2 * Math.PI;
+            if (botFrontToTargetAngle > Math.PI) botFrontToTargetAngle -= 2 * Math.PI;
             return botFrontToTargetAngle;
         }
 
@@ -169,6 +173,5 @@ namespace RLBotCSharpExample
         {
             return Math.Sqrt(Math.Pow((vector.X - vector.X), 2) + Math.Pow((vector.Y - vector.Y), 2));
         }
-
     }
 }
