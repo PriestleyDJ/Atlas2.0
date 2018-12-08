@@ -59,7 +59,7 @@ namespace RLBotCSharpExample
                 System.Numerics.Vector3 goalToBall = System.Numerics.Vector3.Subtract(enemyGoal, ballLocation);
                 Console.Write("[" + goalToBall.X + ", " + goalToBall.Y + "] = goalToBall");
 
-                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * 0.5F));
+                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.15F));
                 Console.Write(", [" + targetLocation.X + ", " + targetLocation.Y + "] = targetLocation");
 
                 // Calculate to get the angle from the front of the bot's car to the target location.
@@ -72,12 +72,12 @@ namespace RLBotCSharpExample
                 Console.Write(", " + steer + " = steer");
 
                 // Change the throttle so the bot can move.
-                //controller.Throttle = (float)Math.Cos(botFrontToTargetAngle);
+                // controller.Throttle = (float)Math.Cos(botFrontToTargetAngle);
                 controller.Throttle = 1F;
 
                 // Handles sliding
-                //controller.Handbrake = (Math.Abs(steer) > 3.5 && carLocation.Z < 120);
-                controller.Handbrake = false;
+                controller.Handbrake = (Math.Abs(steer) > 4.25 && carLocation.Z < 120);
+                // controller.Handbrake = false;
 
                 // Handles boosting
                 controller.Boost = (Math.Abs(steer) < 0.12F && carLocation.Z < 120);
@@ -86,14 +86,10 @@ namespace RLBotCSharpExample
                 Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
                 if (kickoff)
                 {
-                    // Pause on kickoff for the first second.
-                    // The other four seconds are the countdown.
-                    if (kickoffWatch.ElapsedMilliseconds <= 5000)
-                    {
-                        controller.Boost = false;
-                        controller.Throttle = 0;
-                        Console.Write(", " + (kickoffWatch.ElapsedMilliseconds / 1000F) + "s kickoff");
-                    }
+                    controller.Boost = true;
+                    controller.Throttle = 1;
+                    controller.Handbrake = false;
+                    Console.Write(", " + (kickoffWatch.ElapsedMilliseconds / 1000F) + "s kickoff");
                 }
                 else
                 {
