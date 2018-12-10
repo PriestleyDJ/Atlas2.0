@@ -53,10 +53,10 @@ namespace RLBotCSharpExample
 
                 // Get the target location so we can shoot the ball towards the opponent's goal.
                 System.Numerics.Vector3 goalToBall = System.Numerics.Vector3.Subtract(enemyGoal, ballLocation);
-                Console.Write("[" + goalToBall.X + ", " + goalToBall.Y + "] = goalToBall");
+                //Console.Write("[" + goalToBall.X + ", " + goalToBall.Y + "] = goalToBall");
 
-                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.175F));
-                Console.Write(", [" + targetLocation.X + ", " + targetLocation.Y + "] = targetLocation");
+                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.2F));
+                //Console.Write(", [" + targetLocation.X + ", " + targetLocation.Y + "] = targetLocation");
 
                 // Calculate to get the angle from the front of the bot's car to the target location.
                 double botToTargetAngle = Math.Atan2(targetLocation.Y - carLocation.Y, targetLocation.X - carLocation.X);
@@ -67,12 +67,19 @@ namespace RLBotCSharpExample
                 controller.Steer = steer;
                 Console.Write(", " + steer + " = steer");
 
-                // Change the throttle so the bot can move.
-                // controller.Throttle = (float)Math.Cos(botFrontToTargetAngle);
-                controller.Throttle = 1F;
+                // Change the throttle so the bot can move.              
+                if (ballLocation.Z < 350)
+                {
+                    controller.Throttle = 1F;
+                }
+                else
+                {
+                    double time = Math.Sqrt(-ballVelocity.Z - Math.Sqrt(Math.Pow(ballVelocity.Z, 2) + 2 * -650 * (ballLocation.Z - 92.75))) / -650;
+                    Console.Write(", " + time + " = time");
+                }
 
                 // Handles sliding
-                controller.Handbrake = (Math.Abs(steer) > 4.25 && carLocation.Z < 120);
+                controller.Handbrake = (Math.Abs(steer) > 3.5 && carLocation.Z < 120);
 
                 // Handles boosting
                 controller.Boost = (Math.Abs(steer) < 0.12F && carLocation.Z < 120);
@@ -80,7 +87,7 @@ namespace RLBotCSharpExample
                 // Land on wheels
                 if(carLocation.Z > 200)
                 {
-                    float proportion = 0.5F;
+                    float proportion = 0.8F;
                     controller.Roll = (float)carRotation.Roll * -proportion;
                     controller.Pitch = (float)carRotation.Pitch * -proportion;
                 }
@@ -101,11 +108,10 @@ namespace RLBotCSharpExample
                     // Get the controller required for the dodge.
                     controller = getDodgeOutput(controller, steer);
                 }
-                else if (Math.Abs(steer) < 0.2F && canDodge(gameTickPacket) && carLocation.Z < 120 && distanceToBall > 2000)
+                else if (Math.Abs(steer) < 0.2F && canDodge(gameTickPacket) && carLocation.Z < 120 && (distanceToBall > 2000 || distanceToBall < 500) && gameTickPacket.Players(this.index).Value.Boost < 1)
                 {
-                    // Begin a new dodge.
-                    // This will dodge at any point when it's not kickoff, or any point during kickoff when we have no boost.
-                    if(!kickoff || gameTickPacket.Players(this.index).Value.Boost == 0) dodgeWatch.Restart();
+                    // Begin a new dodge.                    
+                    dodgeWatch.Restart();
                 }
 
                 // End the line printed this frame
