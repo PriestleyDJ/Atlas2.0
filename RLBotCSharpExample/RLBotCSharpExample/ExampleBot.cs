@@ -9,15 +9,11 @@ namespace RLBotCSharpExample
     // We want to our bot to derive from Bot, and then implement its abstract methods.
     class ExampleBot : Bot
     {
-        private Stopwatch kickoffWatch = new Stopwatch();
         private Stopwatch dodgeWatch = new Stopwatch();
 
         // We want the constructor for ExampleBot to extend from Bot.
         public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex)
         {
-            kickoffWatch.Reset();
-            kickoffWatch.Start();
-
             dodgeWatch.Reset();
             dodgeWatch.Start();
         }
@@ -59,7 +55,7 @@ namespace RLBotCSharpExample
                 System.Numerics.Vector3 goalToBall = System.Numerics.Vector3.Subtract(enemyGoal, ballLocation);
                 Console.Write("[" + goalToBall.X + ", " + goalToBall.Y + "] = goalToBall");
 
-                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.15F));
+                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.175F));
                 Console.Write(", [" + targetLocation.X + ", " + targetLocation.Y + "] = targetLocation");
 
                 // Calculate to get the angle from the front of the bot's car to the target location.
@@ -77,10 +73,17 @@ namespace RLBotCSharpExample
 
                 // Handles sliding
                 controller.Handbrake = (Math.Abs(steer) > 4.25 && carLocation.Z < 120);
-                // controller.Handbrake = false;
 
                 // Handles boosting
                 controller.Boost = (Math.Abs(steer) < 0.12F && carLocation.Z < 120);
+
+                // Land on wheels
+                if(carLocation.Z > 200)
+                {
+                    float proportion = 0.5F;
+                    controller.Roll = (float)carRotation.Roll * -proportion;
+                    controller.Pitch = (float)carRotation.Pitch * -proportion;
+                }
 
                 // Kickoff
                 Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
@@ -89,11 +92,6 @@ namespace RLBotCSharpExample
                     controller.Boost = true;
                     controller.Throttle = 1;
                     controller.Handbrake = false;
-                    Console.Write(", " + (kickoffWatch.ElapsedMilliseconds / 1000F) + "s kickoff");
-                }
-                else
-                {
-                    kickoffWatch.Stop();
                 }
 
                 // Handles dodging
@@ -147,12 +145,12 @@ namespace RLBotCSharpExample
         private Controller getDodgeOutput(Controller controller, double steer)
         {
             controller.Boost = false;
-            if (dodgeWatch.ElapsedMilliseconds <= 150)
+            if (dodgeWatch.ElapsedMilliseconds <= 100)
             {
                 controller.Jump = true;
                 controller.Pitch = -1;
             }
-            else if (dodgeWatch.ElapsedMilliseconds <= 275)
+            else if (dodgeWatch.ElapsedMilliseconds <= 225)
             {
                 controller.Jump = false;
                 controller.Pitch = -1;
