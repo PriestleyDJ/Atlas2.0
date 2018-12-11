@@ -40,25 +40,16 @@ namespace RLBotCSharpExample
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
                 Boolean wheelContact = gameTickPacket.Players(this.index).Value.HasWheelContact;
                 int team = gameTickPacket.Players(this.index).Value.Team;
-
+                
                 // Get the ball prediction data.
                 BallPrediction prediction = GetBallPrediction();
 
+                // Determine which way we are shooting (positive = blue, negative = orange).
+                int teamSign = team == 0 ? 1 : -1;
+                
                 // Determine where the goals are.
-                System.Numerics.Vector3 enemyGoal;
-                System.Numerics.Vector3 homeGoal;
-                if (team == 0)
-                {
-                    // Blue team shooting towards the orange net.
-                    enemyGoal = new System.Numerics.Vector3(0F, 5120F, 0F);
-                    homeGoal = new System.Numerics.Vector3(0F, -5120F, 0F);
-                }
-                else
-                {
-                    // Orange team shooting towards the blue net.
-                    enemyGoal = new System.Numerics.Vector3(0F, -5120F, 0F);
-                    homeGoal = new System.Numerics.Vector3(0F, 5120F, 0F);
-                }
+                System.Numerics.Vector3 enemyGoal = new System.Numerics.Vector3(0F, 5120F * teamSign, 0F);
+                System.Numerics.Vector3 homeGoal = new System.Numerics.Vector3(0F, -5120F * teamSign, 0F);
 
                 // Make a dodge boolean, this'll come in handy later.
                 Boolean dodge = false;
@@ -66,16 +57,25 @@ namespace RLBotCSharpExample
                 // Calculate the distance from the car to the ball
                 var distanceToBall = getDistance2D(carLocation.X, ballLocation.X, carLocation.Y, ballLocation.Y);
                 Console.Write((int)distanceToBall + " = ball distance");
-                
-                if (ballLocation.Z < (distanceToBall < 500 ? 140 : 250))
+
+                // Kickoff.
+                Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
+                if (kickoff)
+                {
+                    System.Numerics.Vector3 targetLocation = new System.Numerics.Vector3(0, Math.Abs(carLocation.Y) > 3000 ? carLocation.Y + teamSign * 600 : 0, 0);
+                    controller = driveToLocation(gameTickPacket, controller, targetLocation);
+                    controller.Boost = true;
+                    controller.Handbrake = false;
+                    dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < 2450;
+                }else if (ballLocation.Z < (distanceToBall < 500 ? 140 : 250))
                 {
                     // Defending.
                     double defendingThreshold = 3.25D;
                     double ballAngle = correctAngle(Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X) - carRotation.Yaw);
                     double enemyGoalAngle = correctAngle(Math.Atan2(enemyGoal.Y - carLocation.Y, enemyGoal.X - carLocation.X) - carRotation.Yaw);
-                    if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold && (Math.Abs(ballVelocity.Y) < 2200 || Math.Abs(carLocation.Y) < Math.Abs(ballLocation.Y)))
+                    if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold && (Math.Abs(ballVelocity.Y) < 2200 || carLocation.Y * teamSign > ballLocation.Y * teamSign))
                     {
-                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 ? ballLocation : homeGoal);
+                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 || teamSign * carLocation.Y < 5120 ? ballLocation : homeGoal);
                         dodge = Math.Abs(controller.Steer) < 0.2F && (team == 0 ? carLocation.Y > -3000 : carLocation.Y < 3000) && gameTickPacket.Players(this.index).Value.Boost < 10;
                     }
                     else
@@ -86,7 +86,7 @@ namespace RLBotCSharpExample
                         // Get the target location so we can shoot the ball towards the opponent's goal.
                         double distance = getDistance2D(hitPoint, carLocation);
                         System.Numerics.Vector3 carToHitPoint = System.Numerics.Vector3.Subtract(hitPoint, carLocation);
-                        double offset = Math.Max(0, Math.Min(0.24, 0.06 * Math.Abs(carToHitPoint.Y) / Math.Abs(carToHitPoint.X)));
+                        double offset = Math.Max(0, Math.Min(0.26, 0.06 * Math.Abs(carToHitPoint.Y) / Math.Abs(carToHitPoint.X)));
                         Console.Write(", " + (float)offset + " = offset");
                         System.Numerics.Vector3 goalToHitPoint = System.Numerics.Vector3.Subtract(enemyGoal, hitPoint);
                         System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(hitPoint, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToHitPoint), (float)(distance * -offset)));
@@ -123,16 +123,6 @@ namespace RLBotCSharpExample
                     float proportion = 0.8F;
                     controller.Roll = (float)carRotation.Roll * -proportion;
                     controller.Pitch = (float)carRotation.Pitch * -proportion;
-                }
-
-                // Kickoff.
-                Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
-                if (kickoff)
-                {
-                    controller.Boost = true;
-                    controller.Throttle = 1F;
-                    controller.Handbrake = false;
-                    dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < 2500;
                 }
 
                 // Handles dodging.
@@ -338,6 +328,7 @@ namespace RLBotCSharpExample
             return fromFramework(prediction.Slices(0).Value.Physics.Value.Location.Value);
         }
 
+        // Renders the prediction up to a certain point.
         private void renderPrediction(BallPrediction prediction, int start, int end, System.Windows.Media.Color colour)
         {
             for (int i = Math.Max(1, start); i < Math.Min(prediction.SlicesLength, end); i++)
