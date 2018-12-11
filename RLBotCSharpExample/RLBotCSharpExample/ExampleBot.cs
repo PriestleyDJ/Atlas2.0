@@ -73,9 +73,9 @@ namespace RLBotCSharpExample
                     double defendingThreshold = 3.25D;
                     double ballAngle = correctAngle(Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X) - carRotation.Yaw);
                     double enemyGoalAngle = correctAngle(Math.Atan2(enemyGoal.Y - carLocation.Y, enemyGoal.X - carLocation.X) - carRotation.Yaw);
-                    if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold)
+                    if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold && (Math.Abs(ballVelocity.Y) < 2200 || Math.Abs(carLocation.Y) < Math.Abs(ballLocation.Y)))
                     {
-                        controller = driveToLocation(gameTickPacket, controller, homeGoal);
+                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 ? ballLocation : homeGoal);
                         dodge = Math.Abs(controller.Steer) < 0.2F && (team == 0 ? carLocation.Y > -3000 : carLocation.Y < 3000) && gameTickPacket.Players(this.index).Value.Boost < 10;
                     }
                     else
@@ -108,7 +108,7 @@ namespace RLBotCSharpExample
                     System.Numerics.Vector3 bounceLocation = getBounceLocation(prediction);
 
                     // Add an offset so we dribble towards the enemy goal.
-                    System.Numerics.Vector3 bounceOffset = System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Subtract(enemyGoal, bounceLocation)), -80);
+                    System.Numerics.Vector3 bounceOffset = System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Subtract(enemyGoal, bounceLocation)), -30);
                     bounceLocation = System.Numerics.Vector3.Add(bounceLocation, bounceOffset);
 
                     controller = driveToLocationInTime(gameTickPacket, controller, bounceLocation, time);
@@ -132,7 +132,7 @@ namespace RLBotCSharpExample
                     controller.Boost = true;
                     controller.Throttle = 1F;
                     controller.Handbrake = false;
-                    dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < 2100;
+                    dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < 2500;
                 }
 
                 // Handles dodging.
@@ -140,7 +140,7 @@ namespace RLBotCSharpExample
                 if (isDodging())
                 {
                     // Get the controller required for the dodge.
-                    controller = getDodgeOutput(controller, controller.Steer * 1.1);
+                    controller = getDodgeOutput(controller, controller.Steer);
                 }
                 else if (dodge && canDodge(gameTickPacket) && wheelContact)
                 {
@@ -187,7 +187,7 @@ namespace RLBotCSharpExample
             return Math.Sqrt(Math.Pow((vector.X - vector.X), 2) + Math.Pow((vector.Y - vector.Y), 2));
         }
 
-        //This is the method that changes the controller so that it allows the bot to performa dodge.
+        //This is the method that changes the controller so that it allows the bot to perform a dodge.
         private Controller getDodgeOutput(Controller controller, double steer)
         {
             controller.Boost = false;
@@ -204,7 +204,7 @@ namespace RLBotCSharpExample
             else if (dodgeWatch.ElapsedMilliseconds <= 1000)
             {
                 controller.Jump = true;
-                controller.Yaw = (float)Math.Sin(steer);
+                controller.Yaw = -(float)Math.Sin(steer);
                 controller.Pitch = (float)-Math.Cos(steer);
             }
             return controller;
@@ -252,15 +252,30 @@ namespace RLBotCSharpExample
             System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
             Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
-            double botToLocationAngle = Math.Atan2(location.Y - carLocation.Y, location.X - carLocation.X);
-            double botFrontToLocationAngle = correctAngle(botToLocationAngle - carRotation.Yaw);
+            // Stuck in goal.
+            if(Math.Abs(carLocation.Y) > 5120)
+            {
+                location = new System.Numerics.Vector3(Math.Min(800, Math.Max(-800, location.X)), location.Y, location.Z);
+            }
 
-            float steer = (float)botFrontToLocationAngle * 2F;
-            controller.Steer = steer;
+            if (carLocation.Z < 120)
+            {
+                double botToLocationAngle = Math.Atan2(location.Y - carLocation.Y, location.X - carLocation.X);
+                double botFrontToLocationAngle = correctAngle(botToLocationAngle - carRotation.Yaw);
 
+                float steer = (float)botFrontToLocationAngle * 2F;
+                controller.Steer = steer;
+                
+                controller.Boost = (Math.Abs(steer) < 0.12F && gameTickPacket.Players(this.index).Value.HasWheelContact);
+                controller.Handbrake = (Math.Abs(steer) > 3.8F && gameTickPacket.Players(this.index).Value.HasWheelContact);
+            }
+            else
+            {                
+                controller.Boost = false;
+                controller.Handbrake = false;
+                controller.Steer = carRotation.Roll * 10;
+            }
             controller.Throttle = 1F;
-            controller.Boost = (Math.Abs(steer) < 0.12F && gameTickPacket.Players(this.index).Value.HasWheelContact);
-            controller.Handbrake = (Math.Abs(steer) > 3.8F && gameTickPacket.Players(this.index).Value.HasWheelContact);
 
             return controller;
         }
