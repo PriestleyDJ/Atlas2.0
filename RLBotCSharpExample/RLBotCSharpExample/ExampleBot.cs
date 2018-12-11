@@ -62,7 +62,7 @@ namespace RLBotCSharpExample
                 Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
                 if (kickoff)
                 {
-                    System.Numerics.Vector3 targetLocation = new System.Numerics.Vector3(0, Math.Abs(carLocation.Y) > 3000 ? carLocation.Y + teamSign * 600 : 0, 0);
+                    System.Numerics.Vector3 targetLocation = new System.Numerics.Vector3(0, Math.Abs(carLocation.Y) > 3000 ? carLocation.Y + teamSign * 900 : 0, 0);
                     controller = driveToLocation(gameTickPacket, controller, targetLocation);
                     controller.Boost = true;
                     controller.Handbrake = false;
@@ -75,7 +75,7 @@ namespace RLBotCSharpExample
                     double enemyGoalAngle = correctAngle(Math.Atan2(enemyGoal.Y - carLocation.Y, enemyGoal.X - carLocation.X) - carRotation.Yaw);
                     if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold && (Math.Abs(ballVelocity.Y) < 2200 || carLocation.Y * teamSign > ballLocation.Y * teamSign))
                     {
-                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 || teamSign * carLocation.Y < 5120 ? ballLocation : homeGoal);
+                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 || teamSign * carLocation.Y < -5120 ? ballLocation : homeGoal);
                         dodge = Math.Abs(controller.Steer) < 0.2F && (team == 0 ? carLocation.Y > -3000 : carLocation.Y < 3000) && gameTickPacket.Players(this.index).Value.Boost < 10;
                     }
                     else
