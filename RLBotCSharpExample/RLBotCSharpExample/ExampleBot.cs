@@ -29,26 +29,22 @@ namespace RLBotCSharpExample
             // These are nullables so trying to get them when they're null will cause errors, therefore we wrap in try-catch.
             try
             {
+                // Start printing for this frame.
+                Console.Write(this.index + ": ");
+
                 // Store the required data from the gameTickPacket.
                 System.Numerics.Vector3 ballLocation = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Location.Value);
                 System.Numerics.Vector3 ballVelocity = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Velocity.Value);
                 System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
                 System.Numerics.Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
                 Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
+                Boolean wheelContact = gameTickPacket.Players(this.index).Value.HasWheelContact;
+                int team = gameTickPacket.Players(this.index).Value.Team;
 
                 // Get the ball prediction data.
                 BallPrediction prediction = GetBallPrediction();
 
-                // Loop through every 10th point so we don't render too many lines.
-                for (int i = 10; i < prediction.SlicesLength; i += 10)
-                {
-                    System.Numerics.Vector3 pointA = fromFramework(prediction.Slices(i - 10).Value.Physics.Value.Location.Value);
-                    System.Numerics.Vector3 pointB = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
-                    Renderer.DrawLine3D(System.Windows.Media.Color.FromRgb(255, 0, 255), pointA, pointB);
-                }
-
-                //Determine where the goals are.
-                int team = gameTickPacket.Players(this.index).Value.Team;
+                // Determine where the goals are.
                 System.Numerics.Vector3 enemyGoal;
                 System.Numerics.Vector3 homeGoal;
                 if (team == 0)
@@ -64,42 +60,45 @@ namespace RLBotCSharpExample
                     homeGoal = new System.Numerics.Vector3(0F, 5120F, 0F);
                 }
 
+                // Make a dodge boolean, this'll come in handy later.
+                Boolean dodge = false;
+
                 // Calculate the distance from the car to the ball
                 var distanceToBall = getDistance2D(carLocation.X, ballLocation.X, carLocation.Y, ballLocation.Y);
-
-                // Get the target location so we can shoot the ball towards the opponent's goal.
-                System.Numerics.Vector3 goalToBall = System.Numerics.Vector3.Subtract(enemyGoal, ballLocation);
-                //Console.Write("[" + goalToBall.X + ", " + goalToBall.Y + "] = goalToBall");
-
-                System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(ballLocation, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToBall), (float)distanceToBall * -0.15F));
-                //Console.Write(", [" + targetLocation.X + ", " + targetLocation.Y + "] = targetLocation");
-
-                // Calculate to get the angle from the front of the bot's car to the target location.
-                double botToTargetAngle = Math.Atan2(targetLocation.Y - carLocation.Y, targetLocation.X - carLocation.X);
-                double botFrontToTargetAngle = correctAngle(botToTargetAngle - carRotation.Yaw);
-
-                // Decide which way to steer in order to get to the ball.
-                float steer = (float)botFrontToTargetAngle * 2F;
-                controller.Steer = steer;               
-
-                // Change the throttle so the bot can move.              
-                if (ballLocation.Z < 190)
+                Console.Write((int)distanceToBall + " = ball distance");
+                
+                if (ballLocation.Z < (distanceToBall < 500 ? 140 : 250))
                 {
-                    if ((team == 0 && carLocation.Y - 1000 > ballLocation.Y) || (team == 1 && carLocation.Y + 1000 < ballLocation.Y))
+                    // Defending.
+                    double defendingThreshold = 3.25D;
+                    double ballAngle = correctAngle(Math.Atan2(ballLocation.Y - carLocation.Y, ballLocation.X - carLocation.X) - carRotation.Yaw);
+                    double enemyGoalAngle = correctAngle(Math.Atan2(enemyGoal.Y - carLocation.Y, enemyGoal.X - carLocation.X) - carRotation.Yaw);
+                    if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold)
                     {
-                        double botToGoalAngle = Math.Atan2(homeGoal.Y - carLocation.Y, homeGoal.X - carLocation.X);
-                        double botFrontToGoalAngle = correctAngle(botToGoalAngle - carRotation.Yaw);
-                       
-                        float goalSteer = (float)botFrontToGoalAngle * 2F;
-                        controller.Steer = goalSteer;
+                        controller = driveToLocation(gameTickPacket, controller, homeGoal);
+                        dodge = Math.Abs(controller.Steer) < 0.2F && (team == 0 ? carLocation.Y > -3000 : carLocation.Y < 3000) && gameTickPacket.Players(this.index).Value.Boost < 10;
                     }
-                    controller.Throttle = 1F;
+                    else
+                    {
+                        // Attacking.
+                        System.Numerics.Vector3 hitPoint = getHitPoint(gameTickPacket, prediction);
 
-                    // Handles boosting
-                    controller.Boost = (Math.Abs(steer) < 0.12F && carLocation.Z < 120);
+                        // Get the target location so we can shoot the ball towards the opponent's goal.
+                        double distance = getDistance2D(hitPoint, carLocation);
+                        System.Numerics.Vector3 carToHitPoint = System.Numerics.Vector3.Subtract(hitPoint, carLocation);
+                        double offset = Math.Max(0, Math.Min(0.24, 0.06 * Math.Abs(carToHitPoint.Y) / Math.Abs(carToHitPoint.X)));
+                        Console.Write(", " + (float)offset + " = offset");
+                        System.Numerics.Vector3 goalToHitPoint = System.Numerics.Vector3.Subtract(enemyGoal, hitPoint);
+                        System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(hitPoint, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToHitPoint), (float)(distance * -offset)));
+
+                        controller = driveToLocation(gameTickPacket, controller, targetLocation);
+                        dodge = Math.Abs(controller.Steer) < 0.2F && (distanceToBall > 2000 || (distanceToBall < 500 && ballLocation.Z < 180)) && gameTickPacket.Players(this.index).Value.Boost < 10;
+                    }
                 }
                 else
                 {
+                    // Catching the ball.
+                    // Determine the time the ball will take to touch the ground
                     double u = ballVelocity.Z;
                     double a = -650;
                     double s = -(ballLocation.Z - 92.75);
@@ -107,67 +106,49 @@ namespace RLBotCSharpExample
                     Console.Write(", " + (float)time + " = time");
 
                     System.Numerics.Vector3 bounceLocation = getBounceLocation(prediction);
-                    double distance = getDistance2D(carLocation.X, bounceLocation.X, carLocation.Y, bounceLocation.Y);
-                    double targetSpeed = distance / time;
-                    double currentSpeed = carVelocity.Length();
-                    Console.Write(", " + (int)targetSpeed + " = targetSpeed");
-                    Console.Write(", " + (int)currentSpeed + " = currentSpeed");
 
-                    if (targetSpeed > currentSpeed)
-                    {
-                        controller.Throttle = 1;
-                        controller.Boost = targetSpeed > 1500 || targetSpeed > currentSpeed + 1000;
-                    }
-                    else if (targetSpeed < currentSpeed - 200)
-                    {
-                        controller.Throttle = -1;
-                    }
-                    else
-                    {
-                        controller.Throttle = 0;
-                    }
-                    double botToBounceAngle = Math.Atan2(bounceLocation.Y - carLocation.Y, bounceLocation.X - carLocation.X);
-                    double botFrontToBounceAngle = correctAngle(botToBounceAngle - carRotation.Yaw);
-                    float bounceSteer = (float)botFrontToBounceAngle * 2F;
-                    controller.Steer = bounceSteer;
+                    // Add an offset so we dribble towards the enemy goal.
+                    System.Numerics.Vector3 bounceOffset = System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Subtract(enemyGoal, bounceLocation)), -80);
+                    bounceLocation = System.Numerics.Vector3.Add(bounceLocation, bounceOffset);
+
+                    controller = driveToLocationInTime(gameTickPacket, controller, bounceLocation, time);
+                    dodge = gameTickPacket.Players(this.index).Value.Boost < 1 && getDistance2D(bounceLocation, carLocation) > 2500;
                 }
-                Console.Write(", " + (float)controller.Throttle + " = Throttle");
-                Console.Write(", " + steer + " = steer");
+                Console.Write(", " + (float)controller.Throttle + " = throttle");
+                Console.Write(", " + (float)controller.Steer + " = steer");
 
-                // Handles sliding
-                controller.Handbrake = (Math.Abs(steer) > 4 && carLocation.Z < 120);
-
-                // Land on wheels
-                if (carLocation.Z > 200)
+                // Land on wheels.
+                if (carLocation.Z > 200 && !isDodging())
                 {
                     float proportion = 0.8F;
                     controller.Roll = (float)carRotation.Roll * -proportion;
                     controller.Pitch = (float)carRotation.Pitch * -proportion;
                 }
 
-                // Kickoff
+                // Kickoff.
                 Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
                 if (kickoff)
                 {
                     controller.Boost = true;
-                    controller.Throttle = 1;
+                    controller.Throttle = 1F;
                     controller.Handbrake = false;
+                    dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < 2100;
                 }
 
-                // Handles dodging
+                // Handles dodging.
                 Console.Write(", " + (dodgeWatch.ElapsedMilliseconds / 1000F) + "s dodge");
                 if (isDodging())
                 {
                     // Get the controller required for the dodge.
-                    controller = getDodgeOutput(controller, steer);
+                    controller = getDodgeOutput(controller, controller.Steer * 1.1);
                 }
-                else if (Math.Abs(steer) < 0.2F && canDodge(gameTickPacket) && carLocation.Z < 120 && (distanceToBall > 2000 || (distanceToBall < 500 && ballLocation.Z < 180)) && gameTickPacket.Players(this.index).Value.Boost < 1)
+                else if (dodge && canDodge(gameTickPacket) && wheelContact)
                 {
                     // Begin a new dodge.                    
                     dodgeWatch.Restart();
                 }
 
-                // End the line printed this frame
+                // End the line printed this frame.
                 Console.WriteLine();
             }
             catch (Exception e)
@@ -188,13 +169,19 @@ namespace RLBotCSharpExample
             return botFrontToTargetAngle;
         }
 
-        // Get the 2D distance between two points
+        // Get the 2D distance between two points.
         public double getDistance2D(double x1, double x2, double y1, double y2)
         {
             return Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
         }
 
-        // Get the size of a 2D vector
+        // Get the 2D distance between two vectors.
+        public double getDistance2D(System.Numerics.Vector3 pointA, System.Numerics.Vector3 pointB)
+        {
+            return getDistance2D(pointA.X, pointB.X, pointA.Y, pointB.Y);
+        }
+
+        // Get the size of a 2D vector.
         public double magnitude2D(System.Numerics.Vector3 vector)
         {
             return Math.Sqrt(Math.Pow((vector.X - vector.X), 2) + Math.Pow((vector.Y - vector.Y), 2));
@@ -223,13 +210,13 @@ namespace RLBotCSharpExample
             return controller;
         }
 
-        // Tells us whether the bot is dodging or not
+        // Tells us whether the bot is dodging or not.
         private Boolean isDodging()
         {
             return dodgeWatch.ElapsedMilliseconds <= 1000;
         }
 
-        // Tells us whether the bot is eligible to perform a dodge or not
+        // Tells us whether the bot is eligible to perform a dodge or not.
         private Boolean canDodge(GameTickPacket gameTickPacket)
         {
             return dodgeWatch.ElapsedMilliseconds >= 2200 && gameTickPacket.Players(this.index).Value.HasWheelContact;
@@ -245,18 +232,106 @@ namespace RLBotCSharpExample
             return new System.Numerics.Vector3(vec.X, vec.Y, vec.Z);
         }
         
-
+        // Returns the location of where the ball will first hit the ground
         private System.Numerics.Vector3 getBounceLocation(BallPrediction prediction)
         {
-            for (int i = 1; i < prediction.SlicesLength; i ++)
+            for (int i = 0; i < prediction.SlicesLength; i++)
             {
-                System.Numerics.Vector3 pointA = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);                
-                if(pointA.Z < 100)
+                System.Numerics.Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);                
+                if(point.Z < 110)
                 {
-                    return pointA;
+                    renderPrediction(prediction, 0, i, System.Windows.Media.Color.FromRgb(255, 0, 255));
+                    return point;
                 }               
             }
             return fromFramework(prediction.Slices(0).Value.Physics.Value.Location.Value);
         }
+
+        private Controller driveToLocation(GameTickPacket gameTickPacket, Controller controller, System.Numerics.Vector3 location)
+        {
+            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
+
+            double botToLocationAngle = Math.Atan2(location.Y - carLocation.Y, location.X - carLocation.X);
+            double botFrontToLocationAngle = correctAngle(botToLocationAngle - carRotation.Yaw);
+
+            float steer = (float)botFrontToLocationAngle * 2F;
+            controller.Steer = steer;
+
+            controller.Throttle = 1F;
+            controller.Boost = (Math.Abs(steer) < 0.12F && gameTickPacket.Players(this.index).Value.HasWheelContact);
+            controller.Handbrake = (Math.Abs(steer) > 3.8F && gameTickPacket.Players(this.index).Value.HasWheelContact);
+
+            return controller;
+        }
+
+        private Controller driveToLocationInTime(GameTickPacket gameTickPacket, Controller controller, System.Numerics.Vector3 location, double time)
+        {
+            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            System.Numerics.Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
+
+            // Get the default driving controller
+            controller = driveToLocation(gameTickPacket, controller, location);
+
+            // Handling the speed
+            double distance = getDistance2D(carLocation.X, location.X, carLocation.Y, location.Y);
+            double targetSpeed = distance / time;
+            double currentSpeed = carVelocity.Length();
+            if (targetSpeed > currentSpeed)
+            {
+                controller.Throttle = 1;
+                controller.Boost = targetSpeed > 1410 || targetSpeed > currentSpeed + 1000;
+            }
+            else
+            {
+                controller.Boost = false;
+                if (targetSpeed < currentSpeed - 200)
+                {
+                    controller.Throttle = -1;
+                }
+                else
+                {
+                    controller.Throttle = 0;
+                }
+            }
+
+            return controller;
+        }
+
+        // Returns a hittable point on the ball.
+        private System.Numerics.Vector3 getHitPoint(GameTickPacket gameTickPacket, BallPrediction prediction)
+        {
+            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            double u = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value).Length();
+
+            // Estimate the maximum velocity
+            double maxV = Math.Max(1410, u + 150 * gameTickPacket.Players(this.index).Value.Boost);
+
+            for (int i = 0; i < prediction.SlicesLength; i++)
+            {
+                System.Numerics.Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
+
+                double s = System.Numerics.Vector3.Distance(point, carLocation) - 92.75;
+                double t = (double)i / 60D;
+                double v = s / (t / 2D) - u;
+                if(v <= maxV)
+                {
+                    renderPrediction(prediction, 0, i, System.Windows.Media.Color.FromRgb(255, 255, 255));
+                    return point;
+                }
+            }
+            return fromFramework(prediction.Slices(0).Value.Physics.Value.Location.Value);
+        }
+
+        private void renderPrediction(BallPrediction prediction, int start, int end, System.Windows.Media.Color colour)
+        {
+            for (int i = Math.Max(1, start); i < Math.Min(prediction.SlicesLength, end); i++)
+            {
+                System.Numerics.Vector3 pointA = fromFramework(prediction.Slices(i - 1).Value.Physics.Value.Location.Value);
+                System.Numerics.Vector3 pointB = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
+                Renderer.DrawLine3D(colour, pointA, pointB);
+            }
+        }
+
     }
 }
