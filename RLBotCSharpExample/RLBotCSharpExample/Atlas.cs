@@ -7,12 +7,12 @@ using System.Windows.Media;
 namespace RLBotCSharpExample
 {
     // We want to our bot to derive from Bot, and then implement its abstract methods.
-    class ExampleBot : Bot
+    class Atlas : Bot
     {
         private Stopwatch dodgeWatch = new Stopwatch();
 
         // We want the constructor for ExampleBot to extend from Bot.
-        public ExampleBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex)
+        public Atlas(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex)
         {
             dodgeWatch.Reset();
             dodgeWatch.Start();
@@ -75,8 +75,8 @@ namespace RLBotCSharpExample
                     double enemyGoalAngle = correctAngle(Math.Atan2(enemyGoal.Y - carLocation.Y, enemyGoal.X - carLocation.X) - carRotation.Yaw);
                     if (Math.Abs(ballAngle) + Math.Abs(enemyGoalAngle) > defendingThreshold && (Math.Abs(ballVelocity.Y) < 2200 || carLocation.Y * teamSign > ballLocation.Y * teamSign))
                     {
-                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1000 || teamSign * carLocation.Y < -5120 ? ballLocation : homeGoal);
-                        dodge = Math.Abs(controller.Steer) < 0.2F && (team == 0 ? carLocation.Y > -3000 : carLocation.Y < 3000) && gameTickPacket.Players(this.index).Value.Boost < 10;
+                        controller = driveToLocation(gameTickPacket, controller, getDistance2D(carLocation, homeGoal) < 1250 || teamSign * carLocation.Y < -5120 ? ballLocation : homeGoal);
+                        dodge = Math.Abs(controller.Steer) < 0.2F && teamSign * carLocation.Y > -3000 && gameTickPacket.Players(this.index).Value.Boost < 10;
                     }
                     else
                     {
@@ -309,8 +309,9 @@ namespace RLBotCSharpExample
             System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
             double u = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value).Length();
 
-            // Estimate the maximum velocity
-            double maxV = Math.Max(1410, u + 150 * gameTickPacket.Players(this.index).Value.Boost);
+            // Estimate the maximum velocity.
+            // We also add a small threshold in which the car might reach the ball with a dodge.
+            double maxV = Math.Max(1410, Math.Min(2300 + 300, u + 150 * gameTickPacket.Players(this.index).Value.Boost));
 
             for (int i = 0; i < prediction.SlicesLength; i++)
             {
@@ -318,8 +319,8 @@ namespace RLBotCSharpExample
 
                 double s = System.Numerics.Vector3.Distance(point, carLocation) - 92.75;
                 double t = (double)i / 60D;
-                double v = s / (t / 2D) - u;
-                if(v <= maxV)
+                double v = 2D * (s / t) - u;
+                if (v <= maxV)
                 {
                     renderPrediction(prediction, 0, i, System.Windows.Media.Color.FromRgb(255, 255, 255));
                     return point;
