@@ -1,6 +1,7 @@
-﻿using System;
-using RLBotDotNet;
-using rlbot.flat;
+﻿using RLBotDotNet;
+
+using System;
+using System.Numerics;
 using System.Diagnostics;
 using System.Windows.Media;
 
@@ -18,7 +19,7 @@ namespace RLBotCSharpExample
             dodgeWatch.Start();
         }
 
-        public override Controller GetOutput(GameTickPacket gameTickPacket)
+        public override Controller GetOutput(rlbot.flat.GameTickPacket gameTickPacket)
         {
             // This controller object will be returned at the end of the method.
             // This controller will contain all the inputs that we want the bot to perform.
@@ -33,23 +34,23 @@ namespace RLBotCSharpExample
                 Console.Write(this.index + ": ");
 
                 // Store the required data from the gameTickPacket.
-                System.Numerics.Vector3 ballLocation = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Location.Value);
-                System.Numerics.Vector3 ballVelocity = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Velocity.Value);
-                System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
-                System.Numerics.Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
-                Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
+                Vector3 ballLocation = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Location.Value);
+                Vector3 ballVelocity = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Velocity.Value);
+                Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+                Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
+                rlbot.flat.Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
                 Boolean wheelContact = gameTickPacket.Players(this.index).Value.HasWheelContact;
                 int team = gameTickPacket.Players(this.index).Value.Team;
-                
+
                 // Get the ball prediction data.
-                BallPrediction prediction = GetBallPrediction();
+                rlbot.flat.BallPrediction prediction = GetBallPrediction();
 
                 // Determine which way we are shooting (positive = blue, negative = orange).
                 int teamSign = team == 0 ? 1 : -1;
                 
                 // Determine where the goals are.
-                System.Numerics.Vector3 enemyGoal = new System.Numerics.Vector3(0F, 5120F * teamSign, 0F);
-                System.Numerics.Vector3 homeGoal = new System.Numerics.Vector3(0F, -5120F * teamSign, 0F);
+                Vector3 enemyGoal = new Vector3(0F, 5120F * teamSign, 0F);
+                Vector3 homeGoal = new Vector3(0F, -5120F * teamSign, 0F);
                                                                                                                                         
                 // Make a dodge boolean, this'll come in handy later.
                 Boolean dodge = false;
@@ -62,7 +63,7 @@ namespace RLBotCSharpExample
                 Boolean kickoff = (ballLocation.X == 0 && ballLocation.Y == 0 && ballVelocity.X == 0 && ballVelocity.Y == 0 && ballVelocity.Z == 0);
                 if (kickoff)
                 {
-                    System.Numerics.Vector3 targetLocation = new System.Numerics.Vector3(0, Math.Abs(carLocation.Y) > 3600 ? carLocation.Y + teamSign * 900 : 0, 0);
+                    Vector3 targetLocation = new Vector3(0, Math.Abs(carLocation.Y) > 3600 ? carLocation.Y + teamSign * 900 : 0, 0);
                     controller = driveToLocation(gameTickPacket, controller, targetLocation);
                     controller.Boost = true;
                     controller.Handbrake = false;
@@ -83,15 +84,15 @@ namespace RLBotCSharpExample
                     else
                     {
                         // Attacking.
-                        System.Numerics.Vector3 hitPoint = getHitPoint(gameTickPacket, prediction);
+                        Vector3 hitPoint = getHitPoint(gameTickPacket, prediction);
 
                         // Get the target location so we can shoot the ball towards the opponent's goal.
                         double distance = getDistance2D(hitPoint, carLocation);
-                        System.Numerics.Vector3 carToHitPoint = System.Numerics.Vector3.Subtract(hitPoint, carLocation);
+                        Vector3 carToHitPoint = Vector3.Subtract(hitPoint, carLocation);
                         double offset = Math.Max(0, Math.Min(0.31, 0.075 * Math.Abs(carToHitPoint.Y) / Math.Abs(carToHitPoint.X)));
                         Console.Write(", " + (float)offset + " = offset");
-                        System.Numerics.Vector3 goalToHitPoint = System.Numerics.Vector3.Subtract(enemyGoal, hitPoint);
-                        System.Numerics.Vector3 targetLocation = System.Numerics.Vector3.Add(hitPoint, System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(goalToHitPoint), (float)(distance * -offset)));
+                        Vector3 goalToHitPoint = Vector3.Subtract(enemyGoal, hitPoint);
+                        Vector3 targetLocation = Vector3.Add(hitPoint, Vector3.Multiply(Vector3.Normalize(goalToHitPoint), (float)(distance * -offset)));
 
                         controller = driveToLocation(gameTickPacket, controller, targetLocation);
                         dodge = Math.Abs(controller.Steer) < 0.2F && (distanceToBall > 2000 || (distanceToBall < 500 && ballLocation.Z < 180)) && gameTickPacket.Players(this.index).Value.Boost < 10;
@@ -107,11 +108,11 @@ namespace RLBotCSharpExample
                     double time = (-u - Math.Sqrt(Math.Pow(u, 2) + 2 * a * s)) / a;
                     Console.Write(", " + (float)time + " = time");
 
-                    System.Numerics.Vector3 bounceLocation = getBounceLocation(prediction);
+                    Vector3 bounceLocation = getBounceLocation(prediction);
 
                     // Add an offset so we dribble towards the enemy goal.
-                    System.Numerics.Vector3 bounceOffset = System.Numerics.Vector3.Multiply(System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Subtract(enemyGoal, bounceLocation)), -60);
-                    bounceLocation = System.Numerics.Vector3.Add(bounceLocation, bounceOffset);
+                    Vector3 bounceOffset = Vector3.Multiply(Vector3.Normalize(Vector3.Subtract(enemyGoal, bounceLocation)), -60);
+                    bounceLocation = Vector3.Add(bounceLocation, bounceOffset);
 
                     controller = driveToLocationInTime(gameTickPacket, controller, bounceLocation, time);
 
@@ -177,13 +178,13 @@ namespace RLBotCSharpExample
         }
 
         // Get the 2D distance between two vectors.
-        public double getDistance2D(System.Numerics.Vector3 pointA, System.Numerics.Vector3 pointB)
+        public double getDistance2D(Vector3 pointA, Vector3 pointB)
         {
             return getDistance2D(pointA.X, pointB.X, pointA.Y, pointB.Y);
         }
 
         // Get the size of a 2D vector.
-        public double magnitude2D(System.Numerics.Vector3 vector)
+        public double magnitude2D(Vector3 vector)
         {
             return Math.Sqrt(Math.Pow((vector.X - vector.X), 2) + Math.Pow((vector.Y - vector.Y), 2));
         }
@@ -218,27 +219,22 @@ namespace RLBotCSharpExample
         }
 
         // Tells us whether the bot is eligible to perform a dodge or not.
-        private Boolean canDodge(GameTickPacket gameTickPacket)
+        private Boolean canDodge(rlbot.flat.GameTickPacket gameTickPacket)
         {
             return dodgeWatch.ElapsedMilliseconds >= 2200 && gameTickPacket.Players(this.index).Value.HasWheelContact;
         }
 
-        private System.Numerics.Vector3 fromFramework(rlbot.flat.Vector3 vec)
+        private Vector3 fromFramework(rlbot.flat.Vector3 vec)
         {
-            return new System.Numerics.Vector3(vec.X, vec.Y, vec.Z);
-        }
-
-        private System.Numerics.Vector3 clone(System.Numerics.Vector3 vec)
-        {
-            return new System.Numerics.Vector3(vec.X, vec.Y, vec.Z);
+            return new Vector3(vec.X, vec.Y, vec.Z);
         }
         
         // Returns the location of where the ball will first hit the ground
-        private System.Numerics.Vector3 getBounceLocation(BallPrediction prediction)
+        private Vector3 getBounceLocation(rlbot.flat.BallPrediction prediction)
         {
             for (int i = 0; i < prediction.SlicesLength; i++)
             {
-                System.Numerics.Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);                
+                Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);                
                 if(point.Z < 110)
                 {
                     renderPrediction(prediction, 0, i, System.Windows.Media.Color.FromRgb(255, 0, 255));
@@ -248,15 +244,15 @@ namespace RLBotCSharpExample
             return fromFramework(prediction.Slices(0).Value.Physics.Value.Location.Value);
         }
 
-        private Controller driveToLocation(GameTickPacket gameTickPacket, Controller controller, System.Numerics.Vector3 location)
+        private Controller driveToLocation(rlbot.flat.GameTickPacket gameTickPacket, Controller controller, Vector3 location)
         {
-            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
-            Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
+            Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            rlbot.flat.Rotator carRotation = gameTickPacket.Players(this.index).Value.Physics.Value.Rotation.Value;
 
             // Stuck in goal.
             if(Math.Abs(carLocation.Y) > 5120)
             {
-                location = new System.Numerics.Vector3(Math.Min(800, Math.Max(-800, location.X)), location.Y, location.Z);
+                location = new Vector3(Math.Min(800, Math.Max(-800, location.X)), location.Y, location.Z);
             }
 
             if (carLocation.Z < 120)
@@ -281,10 +277,10 @@ namespace RLBotCSharpExample
             return controller;
         }
 
-        private Controller driveToLocationInTime(GameTickPacket gameTickPacket, Controller controller, System.Numerics.Vector3 location, double time)
+        private Controller driveToLocationInTime(rlbot.flat.GameTickPacket gameTickPacket, Controller controller, Vector3 location, double time)
         {
-            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
-            System.Numerics.Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
+            Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            Vector3 carVelocity = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value);
 
             // Get the default driving controller
             controller = driveToLocation(gameTickPacket, controller, location);
@@ -315,9 +311,9 @@ namespace RLBotCSharpExample
         }
 
         // Returns a hittable point on the ball.
-        private System.Numerics.Vector3 getHitPoint(GameTickPacket gameTickPacket, BallPrediction prediction)
+        private Vector3 getHitPoint(rlbot.flat.GameTickPacket gameTickPacket, rlbot.flat.BallPrediction prediction)
         {
-            System.Numerics.Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
+            Vector3 carLocation = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Location.Value);
             double u = fromFramework(gameTickPacket.Players(this.index).Value.Physics.Value.Velocity.Value).Length();
 
             // Estimate the maximum velocity.           
@@ -325,9 +321,9 @@ namespace RLBotCSharpExample
 
             for (int i = 0; i < prediction.SlicesLength; i++)
             {
-                System.Numerics.Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
+                Vector3 point = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
 
-                double s = System.Numerics.Vector3.Distance(point, carLocation) - 92.75;
+                double s = Vector3.Distance(point, carLocation) - 92.75;
                 double t = (double)i / 60D;
                 double v = 2D * (s / t) - u;
                 if (v <= maxV)
@@ -340,12 +336,12 @@ namespace RLBotCSharpExample
         }
 
         // Renders the prediction up to a certain point.
-        private void renderPrediction(BallPrediction prediction, int start, int end, System.Windows.Media.Color colour)
+        private void renderPrediction(rlbot.flat.BallPrediction prediction, int start, int end, System.Windows.Media.Color colour)
         {
             for (int i = Math.Max(1, start); i < Math.Min(prediction.SlicesLength, end); i++)
             {
-                System.Numerics.Vector3 pointA = fromFramework(prediction.Slices(i - 1).Value.Physics.Value.Location.Value);
-                System.Numerics.Vector3 pointB = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
+                Vector3 pointA = fromFramework(prediction.Slices(i - 1).Value.Physics.Value.Location.Value);
+                Vector3 pointB = fromFramework(prediction.Slices(i).Value.Physics.Value.Location.Value);
                 Renderer.DrawLine3D(colour, pointA, pointB);
             }
         }
