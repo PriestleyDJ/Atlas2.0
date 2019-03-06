@@ -53,7 +53,7 @@ namespace RLBotCSharpExample
 
                 // Wildfire?
                 Boolean teammate = hasTeammate(gameTickPacket);
-                rlbot.flat.PlayerInfo wildfire = getTeammate(gameTickPacket);
+                rlbot.flat.PlayerInfo wildfire = getTeammate(gameTickPacket, carLocation);
                 double wildfireDistanceBall = (teammate ? getDistance2D(wildfire.Physics.Value.Location.Value.X, ballLocation.X, wildfire.Physics.Value.Location.Value.Y, ballLocation.Y) : Double.MaxValue);
 
                 //Quick-chat
