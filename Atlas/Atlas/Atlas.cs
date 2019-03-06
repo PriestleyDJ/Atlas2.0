@@ -108,7 +108,7 @@ namespace RLBotCSharpExample
                         dodge = Math.Abs(controller.Steer) < 0.4F && distanceToBall < (carLocation.X == 0 ? 3000 : 2850);
                     }
                 }
-                else if (Math.Abs(ballLocation.X) > 1800 && wildfireDistanceBall < distanceToBall - 800 && teamSign * ballLocation.Y > -3500 && teammate)
+                else if (Math.Abs(ballLocation.X) > 1800 && wildfireDistanceBall < distanceToBall - 800 && teamSign * ballLocation.Y > 1000 && teammate)
                 {
                     // Recieve the pass!
                     activeState = "Lurking";
@@ -469,18 +469,23 @@ namespace RLBotCSharpExample
             return false; // No teammate.
         }
 
-        private rlbot.flat.PlayerInfo getTeammate(rlbot.flat.GameTickPacket gameTickPacket)
+        private rlbot.flat.PlayerInfo getTeammate(rlbot.flat.GameTickPacket gameTickPacket, Vector3 carLocation)
         {
-            for(int i = 0; i < gameTickPacket.PlayersLength; i++)
+            rlbot.flat.PlayerInfo? closest = null;
+            Vector3 ballLocation = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Location.Value);
+            double closestDistance = 0;
+            for (int i = 0; i < gameTickPacket.PlayersLength; i++)
             {
                 if (i == this.index) continue; // This is Atlas!
-                if (gameTickPacket.Players(i).Value.Team == this.team)
+                Vector3 teammateLocation = fromFramework(gameTickPacket.Players(i).Value.Physics.Value.Location.Value);
+                double distance = getDistance2D(ballLocation.X, teammateLocation.X, ballLocation.Y, teammateLocation.Y);
+                if (gameTickPacket.Players(i).Value.Team == this.team && (closest == null || closestDistance > distance))
                 {
-                    // Wildfire found!
-                    return (rlbot.flat.PlayerInfo)gameTickPacket.Players(i); 
+                    closest = (rlbot.flat.PlayerInfo)gameTickPacket.Players(i);
+                    closestDistance = distance;
                 }
             }
-            return (rlbot.flat.PlayerInfo)gameTickPacket.Players(this.index); // No teammate.
+            return (rlbot.flat.PlayerInfo)closest;
         }
 
         private Vector3? getClosestBoost(rlbot.flat.GameTickPacket gameTickPacket, Vector3 carLocation)
