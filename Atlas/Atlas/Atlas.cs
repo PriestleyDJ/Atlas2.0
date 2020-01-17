@@ -53,10 +53,10 @@ namespace RLBotCSharpExample
 
                 // Wildfire?
                 Boolean teammate = hasTeammate(gameTickPacket);
-                rlbot.flat.PlayerInfo wildfire = getTeammate(gameTickPacket, carLocation);
-                double wildfireDistanceBall = (teammate ? getDistance2D(wildfire.Physics.Value.Location.Value.X, ballLocation.X, wildfire.Physics.Value.Location.Value.Y, ballLocation.Y) : Double.MaxValue);
+                rlbot.flat.PlayerInfo? wildfire = getTeammate(gameTickPacket, carLocation);
+                double wildfireDistanceBall = (teammate ? getDistance2D(((rlbot.flat.PlayerInfo)wildfire).Physics.Value.Location.Value.X, ballLocation.X, ((rlbot.flat.PlayerInfo)wildfire).Physics.Value.Location.Value.Y, ballLocation.Y) : Double.MaxValue);
 
-                //Quick-chat
+                // Quick-chat.
                 int goalsScored = gameTickPacket.Players(this.index).Value.ScoreInfo.Value.Goals;
                 if(goalsScored > this.goals)
                 {
@@ -469,7 +469,7 @@ namespace RLBotCSharpExample
             return false; // No teammate.
         }
 
-        private rlbot.flat.PlayerInfo getTeammate(rlbot.flat.GameTickPacket gameTickPacket, Vector3 carLocation)
+        private rlbot.flat.PlayerInfo? getTeammate(rlbot.flat.GameTickPacket gameTickPacket, Vector3 carLocation)
         {
             rlbot.flat.PlayerInfo? closest = null;
             Vector3 ballLocation = fromFramework(gameTickPacket.Ball.Value.Physics.Value.Location.Value);
@@ -485,7 +485,7 @@ namespace RLBotCSharpExample
                     closestDistance = distance;
                 }
             }
-            return (rlbot.flat.PlayerInfo)closest;
+            return closest;
         }
 
         private Vector3? getClosestBoost(rlbot.flat.GameTickPacket gameTickPacket, Vector3 carLocation)
